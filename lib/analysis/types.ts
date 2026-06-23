@@ -3,11 +3,14 @@ export type SubscoreLabel =
   | "Penultimate Step"
   | "Arm Swing Timing"
   | "Takeoff Mechanics"
-  | "Landing Control";
+  | "Landing Control"
+  | "Consistency Potential";
 
 export type AnalysisSubscore = {
   label: SubscoreLabel;
   score: number;
+  explanation?: string;
+  confidence?: "High" | "Medium" | "Low";
 };
 
 export type AnalysisReport = {

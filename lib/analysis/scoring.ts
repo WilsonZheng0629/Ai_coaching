@@ -262,13 +262,53 @@ export function scoreApproach(frames: PoseFrame[], durationSeconds: number) {
             0.25,
       )
     : 66;
+  const consistencyScore = roundScore(
+    rhythmScore * 0.45 + landingScore * 0.25 + takeoffScore * 0.3,
+  );
 
   const subscores = [
-    { label: "Approach Rhythm" as const, score: rhythmScore },
-    { label: "Penultimate Step" as const, score: penultimateScore },
-    { label: "Arm Swing Timing" as const, score: armSwingTimingScore },
-    { label: "Takeoff Mechanics" as const, score: takeoffScore },
-    { label: "Landing Control" as const, score: landingScore },
+    {
+      label: "Approach Rhythm" as const,
+      score: rhythmScore,
+      explanation:
+        "This estimates tempo consistency and whether speed appears to build into takeoff.",
+      confidence: confidenceLabel(stepPeaks.length, derived.length),
+    },
+    {
+      label: "Penultimate Step" as const,
+      score: penultimateScore,
+      explanation:
+        "This estimates whether the second-to-last step creates enough loading before takeoff.",
+      confidence: confidenceLabel(stepPeaks.length, derived.length),
+    },
+    {
+      label: "Arm Swing Timing" as const,
+      score: armSwingTimingScore,
+      explanation:
+        "This estimates whether the arm swing appears connected to the final plant and takeoff.",
+      confidence: confidenceLabel(stepPeaks.length, derived.length),
+    },
+    {
+      label: "Takeoff Mechanics" as const,
+      score: takeoffScore,
+      explanation:
+        "This estimates knee bend, torso control, and visible hip rise near takeoff.",
+      confidence: confidenceLabel(stepPeaks.length, derived.length),
+    },
+    {
+      label: "Landing Control" as const,
+      score: landingScore,
+      explanation:
+        "This estimates balance and body control after the jump based on visible landing frames.",
+      confidence: landing ? confidenceLabel(stepPeaks.length, derived.length) : "Low",
+    },
+    {
+      label: "Consistency Potential" as const,
+      score: consistencyScore,
+      explanation:
+        "This combines rhythm, takeoff, and landing signals to estimate repeatability potential.",
+      confidence: confidenceLabel(stepPeaks.length, derived.length),
+    },
   ];
 
   const overallScore = roundScore(
@@ -276,7 +316,8 @@ export function scoreApproach(frames: PoseFrame[], durationSeconds: number) {
       penultimateScore * 0.25 +
       armSwingTimingScore * 0.2 +
       takeoffScore * 0.25 +
-      landingScore * 0.1,
+      landingScore * 0.07 +
+      consistencyScore * 0.03,
   );
 
   const confidence = roundScore(
@@ -314,6 +355,8 @@ function buildFixes(subscores: AnalysisReport["subscores"]) {
       "Your takeoff position could be stronger through knee bend, torso control, and vertical lift.",
     "Landing Control":
       "Your landing control looks unstable after takeoff. Focus on balanced, quiet landings.",
+    "Consistency Potential":
+      "Your repeatability may be limited by rhythm, takeoff, or landing variability.",
   };
 
   return [...subscores]
@@ -329,6 +372,7 @@ function buildDrills(subscores: AnalysisReport["subscores"]) {
     "Arm Swing Timing": "Arm swing timing drill",
     "Takeoff Mechanics": "Approach-to-jump pause drill",
     "Landing Control": "Stick-the-landing control drill",
+    "Consistency Potential": "Repeatable approach checkpoint drill",
   };
 
   return [...subscores]
@@ -353,16 +397,59 @@ function buildSummary(score: number, confidence: number) {
   return "The approach needs cleanup before takeoff. Start with rhythm, loading, and body control.";
 }
 
+function confidenceLabel(stepCount: number, frameCount: number) {
+  if (stepCount >= 3 && frameCount >= 32) return "Medium" as const;
+  if (stepCount >= 2 && frameCount >= 18) return "Medium" as const;
+  return "Low" as const;
+}
+
 function fallbackReport(durationSeconds: number, analyzedFrames: number) {
   return {
     source: "pose-algorithm" as const,
     overallScore: 58,
     subscores: [
-      { label: "Approach Rhythm" as const, score: 58 },
-      { label: "Penultimate Step" as const, score: 56 },
-      { label: "Arm Swing Timing" as const, score: 60 },
-      { label: "Takeoff Mechanics" as const, score: 57 },
-      { label: "Landing Control" as const, score: 61 },
+      {
+        label: "Approach Rhythm" as const,
+        score: 58,
+        explanation:
+          "Low-confidence estimate because too few usable pose frames were detected.",
+        confidence: "Low" as const,
+      },
+      {
+        label: "Penultimate Step" as const,
+        score: 56,
+        explanation:
+          "Low-confidence estimate because step timing was not clearly detected.",
+        confidence: "Low" as const,
+      },
+      {
+        label: "Arm Swing Timing" as const,
+        score: 60,
+        explanation:
+          "Low-confidence estimate because arm landmarks were not consistently visible.",
+        confidence: "Low" as const,
+      },
+      {
+        label: "Takeoff Mechanics" as const,
+        score: 57,
+        explanation:
+          "Low-confidence estimate because takeoff frames were not clear enough.",
+        confidence: "Low" as const,
+      },
+      {
+        label: "Landing Control" as const,
+        score: 61,
+        explanation:
+          "Low-confidence estimate because landing frames were not clearly detected.",
+        confidence: "Low" as const,
+      },
+      {
+        label: "Consistency Potential" as const,
+        score: 58,
+        explanation:
+          "Low-confidence estimate based on limited rhythm and body-control signals.",
+        confidence: "Low" as const,
+      },
     ],
     fixes: [
       "The athlete was not detected clearly enough across the clip.",

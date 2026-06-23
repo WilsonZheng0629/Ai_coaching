@@ -8,6 +8,9 @@ export function SiteHeader() {
           Athlet<span className="text-volt">IQ</span>
         </Link>
         <nav className="flex items-center gap-4 text-sm font-medium text-slate-300">
+          <Link className="focus-ring hover:text-white" href="/profile">
+            Profile
+          </Link>
           <Link className="focus-ring hover:text-white" href="/dashboard">
             Dashboard
           </Link>

@@ -1,24 +1,35 @@
 import Link from "next/link";
-import { BarChart3, Medal, Upload, Video } from "lucide-react";
+import { BarChart3, Crosshair, Medal, Target, Upload, Video } from "lucide-react";
 import { ScoreBar } from "@/components/score-bar";
 import { SiteHeader } from "@/components/site-header";
-import { dashboardStats } from "@/lib/mock-analysis";
+import { PrototypeDisclaimer } from "@/components/analysis/prototype-disclaimer";
+import { dashboardProgress } from "@/lib/mockData/athletiq";
 
 const statCards = [
   {
     label: "Total Uploads",
-    value: dashboardStats.totalUploads,
+    value: dashboardProgress.totalUploads,
     icon: Video,
   },
   {
     label: "Latest Score",
-    value: dashboardStats.latestScore,
+    value: dashboardProgress.latestScore,
     icon: BarChart3,
   },
   {
     label: "Best Score",
-    value: dashboardStats.bestScore,
+    value: dashboardProgress.bestScore,
     icon: Medal,
+  },
+  {
+    label: "Most Improved Area",
+    value: dashboardProgress.mostImprovedArea,
+    icon: Target,
+  },
+  {
+    label: "Focus Area This Week",
+    value: dashboardProgress.focusAreaThisWeek,
+    icon: Crosshair,
   },
 ];
 
@@ -45,11 +56,15 @@ export default function DashboardPage() {
             href="/upload"
           >
             <Upload size={18} aria-hidden />
-            New Upload
+            Upload Next Video
           </Link>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="mb-6">
+          <PrototypeDisclaimer />
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
           {statCards.map(({ label, value, icon: Icon }) => (
             <div
               className="rounded-lg border border-white/10 bg-navy-900/80 p-6"
@@ -57,7 +72,7 @@ export default function DashboardPage() {
             >
               <Icon className="mb-5 text-volt" size={26} aria-hidden />
               <p className="text-sm font-bold text-slate-400">{label}</p>
-              <p className="mt-2 text-4xl font-black text-white">{value}</p>
+              <p className="mt-2 text-3xl font-black text-white">{value}</p>
             </div>
           ))}
         </div>
@@ -68,7 +83,7 @@ export default function DashboardPage() {
           </h2>
           <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
             <div className="space-y-5">
-              {dashboardStats.progress.map((week) => (
+              {dashboardProgress.progress.map((week) => (
                 <ScoreBar
                   key={week.week}
                   label={week.week}
@@ -77,7 +92,7 @@ export default function DashboardPage() {
               ))}
             </div>
             <div className="flex min-h-[220px] items-end gap-4 rounded-lg border border-white/10 bg-navy-950/70 p-5">
-              {dashboardStats.progress.map((week) => (
+              {dashboardProgress.progress.map((week) => (
                 <div className="flex flex-1 flex-col items-center" key={week.week}>
                   <div
                     className="w-full rounded-t-md bg-volt"
@@ -91,6 +106,22 @@ export default function DashboardPage() {
               ))}
             </div>
           </div>
+        </section>
+
+        <section className="mt-6 rounded-lg border border-volt/20 bg-volt/10 p-6">
+          <p className="text-sm font-black uppercase tracking-[0.16em] text-volt">
+            Next Upload Goal
+          </p>
+          <p className="mt-3 max-w-3xl text-lg font-bold leading-8 text-white">
+            {dashboardProgress.nextUploadGoal}
+          </p>
+          <Link
+            className="focus-ring mt-5 inline-flex items-center justify-center gap-2 rounded-md bg-volt px-5 py-3 font-black text-navy-950 transition hover:bg-white"
+            href="/upload"
+          >
+            <Upload size={18} aria-hidden />
+            Upload Next Video
+          </Link>
         </section>
       </section>
     </main>

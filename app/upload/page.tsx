@@ -3,15 +3,25 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
-import { Camera, CheckCircle2, FileVideo, Wand2 } from "lucide-react";
+import {
+  AlertTriangle,
+  Camera,
+  CheckCircle2,
+  FileVideo,
+  Wand2,
+} from "lucide-react";
 import { analyzeVideoElement } from "@/lib/analysis/browser-pose";
+import { UnsupportedAngleWarning } from "@/components/upload/unsupported-angle-warning";
 import { SiteHeader } from "@/components/site-header";
 
 const instructions = [
-  "Film from the side",
   "Full body visible",
-  "3-5 step approach",
+  "Film from the side",
+  "Camera does not move",
+  "Athlete performs a 3-step, 4-step, or 5-step approach",
   "Good lighting",
+  "Feet visible",
+  "Takeoff and landing visible",
 ];
 
 export default function UploadPage() {
@@ -19,6 +29,8 @@ export default function UploadPage() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [fileName, setFileName] = useState("");
+  const [videoType, setVideoType] = useState("Hitting approach");
+  const [cameraAngle, setCameraAngle] = useState("Side view");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [error, setError] = useState("");
@@ -38,6 +50,10 @@ export default function UploadPage() {
     try {
       const report = await analyzeVideoElement(videoRef.current, setAnalysisProgress);
       sessionStorage.setItem("athletiq-analysis-report", JSON.stringify(report));
+      sessionStorage.setItem(
+        "athletiq-upload-context",
+        JSON.stringify({ cameraAngle, videoType }),
+      );
       router.push("/analysis");
     } catch (caughtError) {
       setError(
@@ -62,6 +78,10 @@ export default function UploadPage() {
             Use a clean side view so the approach rhythm, footwork, arm swing,
             and takeoff are easy to evaluate.
           </p>
+          <div className="mt-6 rounded-lg border border-volt/20 bg-volt/10 p-4 text-sm leading-6 text-slate-100">
+            For the most accurate prototype result, use a side-view video. Other
+            angles may reduce confidence.
+          </div>
           <div className="mt-8 space-y-3">
             {instructions.map((item) => (
               <div className="flex items-center gap-3" key={item}>
@@ -75,6 +95,45 @@ export default function UploadPage() {
         </aside>
 
         <div className="rounded-lg border border-white/10 bg-navy-900/80 p-5 shadow-glow sm:p-7">
+          <div className="mb-6 grid gap-4 sm:grid-cols-2">
+            <label>
+              <span className="text-sm font-bold text-slate-100">
+                Video type
+              </span>
+              <select
+                className="focus-ring mt-2 w-full rounded-md border border-white/10 bg-navy-950 px-4 py-3 text-white"
+                value={videoType}
+                onChange={(event) => setVideoType(event.target.value)}
+              >
+                <option>Hitting approach</option>
+              </select>
+            </label>
+
+            <label>
+              <span className="text-sm font-bold text-slate-100">
+                Camera angle
+              </span>
+              <select
+                className="focus-ring mt-2 w-full rounded-md border border-white/10 bg-navy-950 px-4 py-3 text-white"
+                value={cameraAngle}
+                onChange={(event) => setCameraAngle(event.target.value)}
+              >
+                <option>Side view</option>
+                <option>Front view</option>
+                <option>Back view</option>
+              </select>
+              <span className="mt-2 block text-xs font-semibold text-volt">
+                Side view is supported for V1.
+              </span>
+            </label>
+          </div>
+
+          {cameraAngle !== "Side view" ? (
+            <div className="mb-6">
+              <UnsupportedAngleWarning />
+            </div>
+          ) : null}
+
           <label
             className="focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-volt flex min-h-[260px] cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-white/20 bg-navy-950/70 p-6 text-center transition hover:border-volt/60"
             htmlFor="video-upload"
@@ -119,6 +178,30 @@ export default function UploadPage() {
                 controls
                 src={videoUrl}
               />
+              <div className="mt-5 rounded-lg border border-white/10 bg-white/[0.03] p-4">
+                <div className="mb-3 flex items-center gap-2 text-sm font-black text-white">
+                  <AlertTriangle className="text-volt" size={18} aria-hidden />
+                  Checklist Confirmation
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {instructions.map((item) => (
+                    <label
+                      className="flex items-center gap-2 text-sm font-semibold text-slate-200"
+                      key={item}
+                    >
+                      <input
+                        className="h-4 w-4 accent-[#2df6c8]"
+                        defaultChecked={
+                          item !== "Film from the side" ||
+                          cameraAngle === "Side view"
+                        }
+                        type="checkbox"
+                      />
+                      {item}
+                    </label>
+                  ))}
+                </div>
+              </div>
             </div>
           ) : null}
 
