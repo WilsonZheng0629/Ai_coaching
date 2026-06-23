@@ -150,6 +150,9 @@ export function analyzeVideoQuality(
       !landmarkVisible(frame.landmarks[rightAnkle])
     );
   }).length;
+  const footVisibilityPercentage = Math.round(
+    ((frames.length - footMissingCount) / Math.max(1, frames.length)) * 100,
+  );
   if (footMissingCount / Math.max(1, frames.length) > 0.15) {
     warnings.push("Feet are not visible enough for reliable step detection.");
   }
@@ -167,6 +170,9 @@ export function analyzeVideoQuality(
   if (offscreenCount / Math.max(1, frames.length) > 0.12) {
     warnings.push("Athlete may be partially off screen in part of the video.");
   }
+  const athleteOffscreenPercentage = Math.round(
+    (offscreenCount / Math.max(1, frames.length)) * 100,
+  );
 
   const hipXs = frames
     .map((frame) => hipCenter(frame.landmarks)?.x)
@@ -187,10 +193,29 @@ export function analyzeVideoQuality(
     );
   }
 
+  const orderedEvents = [
+    events.approachStart,
+    events.penultimateStep,
+    events.plantStep,
+    events.takeoff,
+    events.peakJump,
+    events.landing,
+  ].filter((value): value is number => typeof value === "number");
+  const phaseOrderValid = orderedEvents.every(
+    (timestamp, index) => index === 0 || timestamp >= orderedEvents[index - 1],
+  );
+  if (!phaseOrderValid) {
+    warnings.push("Detected approach phases are out of chronological order.");
+  }
+
   const estimatedAnalysisQuality =
-    averageConfidence > 0.85 && missingFramePercentage < 5
+    averageConfidence > 0.85 &&
+    missingFramePercentage < 5 &&
+    footVisibilityPercentage >= 85 &&
+    athleteOffscreenPercentage <= 5 &&
+    phaseOrderValid
       ? "High"
-      : averageConfidence > 0.7
+      : averageConfidence > 0.7 && phaseOrderValid
         ? "Medium"
         : "Low";
 
@@ -198,8 +223,10 @@ export function analyzeVideoQuality(
     averageConfidence,
     missingFramePercentage,
     framesWithLostTracking,
+    footVisibilityPercentage,
+    athleteOffscreenPercentage,
+    phaseOrderValid,
     estimatedAnalysisQuality,
     warnings,
   };
 }
-

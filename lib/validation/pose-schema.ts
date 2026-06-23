@@ -91,6 +91,11 @@ export type VideoQualityMetrics = {
   averageConfidence: number;
   missingFramePercentage: number;
   framesWithLostTracking: number;
+  footVisibilityPercentage: number;
+  athleteOffscreenPercentage: number;
+  phaseOrderValid: boolean;
+  takeoffDetectionErrorFrames?: number;
+  landingDetectionErrorFrames?: number;
   estimatedAnalysisQuality: "High" | "Medium" | "Low";
   warnings: string[];
 };
@@ -104,4 +109,3 @@ export type ValidationResult = {
   quality: VideoQualityMetrics;
   events: VolleyballEvents;
 };
-

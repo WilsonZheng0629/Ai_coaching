@@ -1,0 +1,2 @@
+clip_id,source,license_status,athlete_id,handedness,camera_view,fps,resolution,total_frames,approach_start_frame,penultimate_step_frame,plant_step_frame,takeoff_frame,peak_jump_frame,landing_frame,foot_visibility_score,offscreen_frames,occlusion_notes,reviewer,review_status
+first_party_001,first_party,first_party_release,,,,,,,,,,,,,,,,,unlabeled

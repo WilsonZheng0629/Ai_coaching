@@ -4,14 +4,25 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   Bug,
+  Database,
+  ExternalLink,
   Eye,
   EyeOff,
+  FileText,
   Pause,
   Play,
+  ShieldCheck,
   TableProperties,
   Upload,
 } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
+import {
+  datasetSources,
+  firstPartyCollectionTargets,
+  labelingColumns,
+  sourceLogColumns,
+  validationMetrics,
+} from "@/lib/validation/dataset-plan";
 import { validateVideoElement } from "@/lib/validation/browser-validation";
 import {
   poseLandmarkNames,
@@ -27,6 +38,19 @@ const qualityStyles = {
   High: "border-emerald-300/40 bg-emerald-400/15 text-emerald-100",
   Medium: "border-amber-300/40 bg-amber-400/15 text-amber-100",
   Low: "border-red-300/40 bg-red-400/15 text-red-100",
+};
+
+const statusLabels = {
+  "usable-if-verified": "Usable if verified",
+  "reference-only": "Reference only",
+  "not-enough": "Not enough",
+};
+
+const statusStyles = {
+  "usable-if-verified":
+    "border-emerald-300/40 bg-emerald-400/10 text-emerald-100",
+  "reference-only": "border-amber-300/40 bg-amber-400/10 text-amber-100",
+  "not-enough": "border-red-300/40 bg-red-400/10 text-red-100",
 };
 
 function drawSkeleton(
@@ -373,6 +397,30 @@ export default function ValidationPage() {
                 </div>
                 <div className="rounded-lg border border-white/10 bg-navy-950/70 p-4">
                   <p className="text-sm font-bold text-slate-400">
+                    Foot Visibility
+                  </p>
+                  <p className="mt-2 text-3xl font-black text-white">
+                    {result.quality.footVisibilityPercentage}%
+                  </p>
+                </div>
+                <div className="rounded-lg border border-white/10 bg-navy-950/70 p-4">
+                  <p className="text-sm font-bold text-slate-400">
+                    Athlete Off-Screen
+                  </p>
+                  <p className="mt-2 text-3xl font-black text-white">
+                    {result.quality.athleteOffscreenPercentage}%
+                  </p>
+                </div>
+                <div className="rounded-lg border border-white/10 bg-navy-950/70 p-4">
+                  <p className="text-sm font-bold text-slate-400">
+                    Phase Order
+                  </p>
+                  <p className="mt-2 text-3xl font-black text-white">
+                    {result.quality.phaseOrderValid ? "Valid" : "Invalid"}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-white/10 bg-navy-950/70 p-4">
+                  <p className="text-sm font-bold text-slate-400">
                     Analysis Quality
                   </p>
                   <p
@@ -382,6 +430,10 @@ export default function ValidationPage() {
                   </p>
                 </div>
               </div>
+              <p className="mt-4 text-sm leading-6 text-slate-400">
+                Takeoff and landing error are intentionally not scored until a
+                human reviewer adds frame labels for this clip.
+              </p>
 
               {result.quality.warnings.length ? (
                 <div className="mt-5 space-y-3">
@@ -478,8 +530,136 @@ export default function ValidationPage() {
             </section>
           </>
         ) : null}
+
+        <section className="mt-8 rounded-lg border border-white/10 bg-navy-900/80 p-5">
+          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="mb-2 text-sm font-black uppercase tracking-[0.18em] text-volt">
+                Dataset Plan
+              </p>
+              <h2 className="text-2xl font-black text-white">
+                Validation Sources and Collection Targets
+              </h2>
+              <p className="mt-3 max-w-3xl leading-7 text-slate-300">
+                Public clips are only for pipeline smoke tests unless licensing
+                and clip quality are verified. Product validation should be
+                based on first-party side-view recordings with manual labels.
+              </p>
+            </div>
+            <div className="rounded-md border border-amber-300/30 bg-amber-400/10 p-4 text-sm font-semibold leading-6 text-amber-50">
+              Good public side-view volleyball approach data is not available
+              at a quality level we should trust for AthletIQ accuracy claims.
+            </div>
+          </div>
+
+          <div className="overflow-auto rounded-lg border border-white/10">
+            <table className="w-full min-w-[1120px] text-left text-sm">
+              <thead className="bg-navy-950 text-slate-300">
+                <tr>
+                  <th className="p-3">Source</th>
+                  <th className="p-3">Contains</th>
+                  <th className="p-3">Side View</th>
+                  <th className="p-3">Labels</th>
+                  <th className="p-3">Usage</th>
+                  <th className="p-3">Usefulness</th>
+                  <th className="p-3">Risks</th>
+                </tr>
+              </thead>
+              <tbody>
+                {datasetSources.map((source) => (
+                  <tr
+                    className="border-t border-white/10 align-top text-slate-200"
+                    key={source.name}
+                  >
+                    <td className="p-3">
+                      <a
+                        className="focus-ring inline-flex items-center gap-2 font-black text-volt hover:text-white"
+                        href={source.url}
+                        rel="noreferrer"
+                        target="_blank"
+                      >
+                        {source.name}
+                        <ExternalLink size={14} aria-hidden />
+                      </a>
+                    </td>
+                    <td className="p-3 leading-6">{source.contains}</td>
+                    <td className="p-3 leading-6">
+                      {source.sideViewApproaches}
+                    </td>
+                    <td className="p-3 leading-6">{source.annotations}</td>
+                    <td className="p-3">
+                      <span
+                        className={`inline-flex rounded-full border px-3 py-1 text-xs font-black ${statusStyles[source.usageStatus]}`}
+                      >
+                        {statusLabels[source.usageStatus]}
+                      </span>
+                      <p className="mt-2 leading-6 text-slate-300">
+                        {source.license}
+                      </p>
+                    </td>
+                    <td className="p-3 leading-6">{source.usefulness}</td>
+                    <td className="p-3 leading-6">{source.risks}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="mt-6 grid gap-6 lg:grid-cols-3">
+          <div className="rounded-lg border border-white/10 bg-white/[0.03] p-5">
+            <ShieldCheck className="mb-4 text-volt" size={26} aria-hidden />
+            <h2 className="text-lg font-black text-white">
+              First-Party Collection
+            </h2>
+            <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-300">
+              {firstPartyCollectionTargets.map((target) => (
+                <li className="border-t border-white/10 pt-3" key={target}>
+                  {target}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="rounded-lg border border-white/10 bg-white/[0.03] p-5">
+            <FileText className="mb-4 text-volt" size={26} aria-hidden />
+            <h2 className="text-lg font-black text-white">
+              Labeling Template
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-slate-300">
+              One row per clip. Label frames, not only timestamps, so model
+              errors can be measured precisely.
+            </p>
+            <pre className="mt-4 max-h-80 overflow-auto rounded-lg border border-white/10 bg-navy-950 p-4 text-xs leading-6 text-slate-200">
+              {labelingColumns.join(",")}
+            </pre>
+            <h3 className="mt-5 text-sm font-black uppercase tracking-[0.14em] text-slate-400">
+              Source Log
+            </h3>
+            <pre className="mt-3 overflow-auto rounded-lg border border-white/10 bg-navy-950 p-4 text-xs leading-6 text-slate-200">
+              {sourceLogColumns.join(",")}
+            </pre>
+          </div>
+
+          <div className="rounded-lg border border-white/10 bg-white/[0.03] p-5">
+            <Database className="mb-4 text-volt" size={26} aria-hidden />
+            <h2 className="text-lg font-black text-white">
+              Metrics To Track
+            </h2>
+            <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-300">
+              {validationMetrics.map((metric) => (
+                <li className="border-t border-white/10 pt-3" key={metric}>
+                  {metric}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-5 rounded-md border border-red-300/30 bg-red-400/10 p-4 text-sm font-semibold leading-6 text-red-50">
+              Do not use broadcast, YouTube, TikTok, or unclear-license video
+              for product validation. Treat those as reference only.
+            </p>
+          </div>
+        </section>
       </section>
     </main>
   );
 }
-
