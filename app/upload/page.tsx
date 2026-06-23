@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Camera, CheckCircle2, FileVideo, Wand2 } from "lucide-react";
+import { analyzeVideoElement } from "@/lib/analysis/browser-pose";
 import { SiteHeader } from "@/components/site-header";
 
 const instructions = [
@@ -15,10 +16,38 @@ const instructions = [
 
 export default function UploadPage() {
   const router = useRouter();
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [fileName, setFileName] = useState("");
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisProgress, setAnalysisProgress] = useState(0);
+  const [error, setError] = useState("");
 
-  const canAnalyze = useMemo(() => Boolean(videoUrl), [videoUrl]);
+  const canAnalyze = useMemo(
+    () => Boolean(videoUrl) && !isAnalyzing,
+    [videoUrl, isAnalyzing],
+  );
+
+  const handleAnalyze = async () => {
+    if (!videoRef.current) return;
+
+    setError("");
+    setIsAnalyzing(true);
+    setAnalysisProgress(4);
+
+    try {
+      const report = await analyzeVideoElement(videoRef.current, setAnalysisProgress);
+      sessionStorage.setItem("athletiq-analysis-report", JSON.stringify(report));
+      router.push("/analysis");
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : "Analysis failed. Try a shorter, clearer side-view video.",
+      );
+      setIsAnalyzing(false);
+    }
+  };
 
   return (
     <main className="page-shell">
@@ -65,8 +94,11 @@ export default function UploadPage() {
               onChange={(event) => {
                 const file = event.target.files?.[0];
                 if (!file) return;
+                if (videoUrl) URL.revokeObjectURL(videoUrl);
                 setFileName(file.name);
                 setVideoUrl(URL.createObjectURL(file));
+                setError("");
+                setAnalysisProgress(0);
               }}
             />
           </label>
@@ -82,11 +114,33 @@ export default function UploadPage() {
                 </span>
               </div>
               <video
+                ref={videoRef}
                 className="aspect-video w-full rounded-lg border border-white/10 bg-black object-contain"
                 controls
                 src={videoUrl}
               />
             </div>
+          ) : null}
+
+          {isAnalyzing ? (
+            <div className="mt-6 rounded-lg border border-volt/20 bg-volt/10 p-4">
+              <div className="mb-2 flex items-center justify-between text-sm font-bold text-slate-100">
+                <span>Analyzing pose and scoring movement</span>
+                <span>{analysisProgress}%</span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                <div
+                  className="h-full rounded-full bg-volt transition-all"
+                  style={{ width: `${analysisProgress}%` }}
+                />
+              </div>
+            </div>
+          ) : null}
+
+          {error ? (
+            <p className="mt-4 rounded-lg border border-red-400/30 bg-red-500/10 p-4 text-sm font-semibold text-red-100">
+              {error}
+            </p>
           ) : null}
 
           <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-between">
@@ -99,11 +153,11 @@ export default function UploadPage() {
             <button
               className="focus-ring inline-flex items-center justify-center gap-2 rounded-md bg-volt px-5 py-3 font-black text-navy-950 transition hover:bg-white disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300"
               disabled={!canAnalyze}
-              onClick={() => router.push("/analysis")}
+              onClick={handleAnalyze}
               type="button"
             >
               <Wand2 size={18} aria-hidden />
-              Generate Analysis
+              {isAnalyzing ? "Analyzing..." : "Generate Analysis"}
             </button>
           </div>
         </div>

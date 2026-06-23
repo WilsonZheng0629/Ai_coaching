@@ -1,4 +1,7 @@
+import type { AnalysisReport } from "./analysis/types";
+
 export const analysisReport = {
+  source: "mock",
   overallScore: 72,
   subscores: [
     { label: "Approach Rhythm", score: 76 },
@@ -17,7 +20,9 @@ export const analysisReport = {
     "Arm swing timing drill",
     "Approach-to-jump pause drill",
   ],
-};
+  summary:
+    "Strong base, with the biggest opportunity in penultimate step length and arm swing timing.",
+} satisfies AnalysisReport;
 
 export const dashboardStats = {
   totalUploads: 3,
