@@ -14,6 +14,9 @@ export function SiteHeader() {
           <Link className="focus-ring hover:text-white" href="/dashboard">
             Dashboard
           </Link>
+          <Link className="focus-ring hover:text-white" href="/player-matches">
+            Pro Matches
+          </Link>
           <Link className="focus-ring hover:text-white" href="/validation">
             Validation
           </Link>

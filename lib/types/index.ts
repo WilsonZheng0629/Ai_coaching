@@ -26,6 +26,7 @@ export type AthleteProfile = {
     | "Improve consistency"
     | "Improve landing control"
     | "";
+  playStyle: string;
 };
 
 export type DrillRecommendation = {

@@ -16,8 +16,19 @@ import { ScoreBar } from "@/components/score-bar";
 import { SiteHeader } from "@/components/site-header";
 import { UnsupportedAngleWarning } from "@/components/upload/unsupported-angle-warning";
 import type { AnalysisReport } from "@/lib/analysis/types";
-import { drillRecommendations, sampleComparison } from "@/lib/mockData/athletiq";
+import { proPlayers } from "@/lib/data/proPlayers";
+import {
+  defaultAthleteProfile,
+  drillRecommendations,
+  sampleComparison,
+} from "@/lib/mockData/athletiq";
 import { analysisReport } from "@/lib/mock-analysis";
+import {
+  findSimilarProPlayers,
+  toMatchUserProfile,
+  type ProPlayerMatch,
+} from "@/lib/playerMatching";
+import type { AthleteProfile } from "@/lib/types";
 
 function confidenceFromReport(report: AnalysisReport) {
   const score = report.metrics?.confidence ?? 55;
@@ -29,10 +40,19 @@ function confidenceFromReport(report: AnalysisReport) {
 export default function AnalysisPage() {
   const [report, setReport] = useState<AnalysisReport>(analysisReport);
   const [cameraAngle, setCameraAngle] = useState("Side view");
+  const [proMatches, setProMatches] = useState<ProPlayerMatch[]>(
+    () =>
+      findSimilarProPlayers(
+        toMatchUserProfile(defaultAthleteProfile),
+        proPlayers,
+        3,
+      ).matchedPlayers,
+  );
 
   useEffect(() => {
     const savedReport = sessionStorage.getItem("athletiq-analysis-report");
     const uploadContext = sessionStorage.getItem("athletiq-upload-context");
+    const storedProfile = localStorage.getItem("athletiq-athlete-profile");
 
     if (uploadContext) {
       try {
@@ -41,6 +61,24 @@ export default function AnalysisPage() {
       } catch {
         setCameraAngle("Side view");
       }
+    }
+
+    try {
+      const profile = storedProfile
+        ? ({ ...defaultAthleteProfile, ...JSON.parse(storedProfile) } as AthleteProfile)
+        : defaultAthleteProfile;
+      setProMatches(
+        findSimilarProPlayers(toMatchUserProfile(profile), proPlayers, 3)
+          .matchedPlayers,
+      );
+    } catch {
+      setProMatches(
+        findSimilarProPlayers(
+          toMatchUserProfile(defaultAthleteProfile),
+          proPlayers,
+          3,
+        ).matchedPlayers,
+      );
     }
 
     if (!savedReport) return;
@@ -211,6 +249,65 @@ export default function AnalysisPage() {
             </p>
           </section>
         </div>
+
+        <section className="mt-6 rounded-lg border border-white/10 bg-navy-900/80 p-6">
+          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex items-center gap-3">
+              <Users className="text-volt" size={24} aria-hidden />
+              <div>
+                <h2 className="text-lg font-black text-white">
+                  Pro Players To Study
+                </h2>
+                <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-300">
+                  Based on your profile, these players may be useful references.
+                  In the future, AthletIQ will compare your actual movement
+                  mechanics to professional player movement patterns.
+                </p>
+              </div>
+            </div>
+            <Link
+              className="focus-ring inline-flex items-center justify-center rounded-md border border-white/15 px-4 py-2 text-sm font-bold text-white transition hover:border-volt/60 hover:bg-white/5"
+              href="/player-matches"
+            >
+              View All Matches
+            </Link>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-3">
+            {proMatches.map((match) => (
+              <article
+                className="rounded-lg border border-white/10 bg-navy-950/65 p-4"
+                key={match.player.id}
+              >
+                <p className="text-sm font-bold text-volt">
+                  {match.similarityScore}/100 profile similarity
+                </p>
+                <h3 className="mt-2 text-xl font-black text-white">
+                  {match.player.fullName}
+                </h3>
+                <p className="mt-2 text-sm font-semibold text-slate-300">
+                  {match.player.position} ·{" "}
+                  {match.player.nationality ?? "Unknown"}
+                </p>
+                <p className="mt-4 text-sm leading-6 text-slate-300">
+                  Your profile is similar to this player in the current
+                  profile-based matcher. This is a reference, not a
+                  prescription.
+                </p>
+                <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-300">
+                  {match.whatToStudy.slice(0, 2).map((item) => (
+                    <li key={item}>- {item}</li>
+                  ))}
+                </ul>
+              </article>
+            ))}
+          </div>
+
+          <p className="mt-5 text-sm font-semibold text-amber-100">
+            Profile-based match only. AthletIQ does not claim your form matches
+            these players. Coach review recommended.
+          </p>
+        </section>
 
         <section className="mt-6 rounded-lg border border-white/10 bg-white/[0.03] p-6">
           <div className="mb-5 flex items-center gap-3">

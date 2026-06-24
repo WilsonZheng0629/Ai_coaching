@@ -224,6 +224,24 @@ export default function ProfilePage() {
                 Your goal helps prioritize drill recommendations after analysis.
               </span>
             </label>
+
+            <label className="block md:col-span-2">
+              <span className="text-sm font-bold text-slate-100">
+                Play style
+              </span>
+              <input
+                className="focus-ring mt-2 w-full rounded-md border border-white/10 bg-navy-950 px-4 py-3 text-white"
+                placeholder="Example: explosive jumper, left-handed attacker, serve receive anchor"
+                value={profile.playStyle}
+                onChange={(event) =>
+                  updateProfile("playStyle", event.target.value)
+                }
+              />
+              <span className="mt-2 block text-xs leading-5 text-slate-400">
+                Optional. AthletIQ uses these words only to find safer study
+                references, not to claim your mechanics match a pro.
+              </span>
+            </label>
           </div>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">

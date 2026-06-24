@@ -16,6 +16,7 @@ export const defaultAthleteProfile: AthleteProfile = {
   standingReach: "",
   maxTouch: "",
   mainGoal: "",
+  playStyle: "",
 };
 
 export const sampleComparison: SimilarAthleteComparison = {
