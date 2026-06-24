@@ -4,10 +4,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
 import {
+  Activity,
   AlertTriangle,
   Camera,
   CheckCircle2,
   FileVideo,
+  ScanLine,
   Wand2,
 } from "lucide-react";
 import { analyzeVideoElement } from "@/lib/analysis/browser-pose";
@@ -24,6 +26,47 @@ const instructions = [
   "Takeoff and landing visible",
 ];
 
+const analysisStages = [
+  { at: 0, label: "Preparing video" },
+  { at: 8, label: "Loading pose model" },
+  { at: 20, label: "Sampling approach frames" },
+  { at: 45, label: "Detecting body landmarks" },
+  { at: 68, label: "Checking footwork and takeoff" },
+  { at: 88, label: "Building coaching report" },
+];
+
+type DashboardSession = {
+  totalUploads: number;
+  latestScore: number | null;
+  bestScore: number | null;
+  focusArea: string | null;
+  scores: number[];
+};
+
+function updateDashboardSession(overallScore: number, focusArea: string | null) {
+  const stored = sessionStorage.getItem("athletiq-dashboard-session");
+  const current: DashboardSession = stored
+    ? JSON.parse(stored)
+    : {
+        totalUploads: 0,
+        latestScore: null,
+        bestScore: null,
+        focusArea: null,
+        scores: [],
+      };
+  const scores = [...current.scores, overallScore].slice(-6);
+  sessionStorage.setItem(
+    "athletiq-dashboard-session",
+    JSON.stringify({
+      totalUploads: current.totalUploads + 1,
+      latestScore: overallScore,
+      bestScore: Math.max(current.bestScore ?? 0, overallScore),
+      focusArea,
+      scores,
+    } satisfies DashboardSession),
+  );
+}
+
 export default function UploadPage() {
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -39,6 +82,9 @@ export default function UploadPage() {
     () => Boolean(videoUrl) && !isAnalyzing,
     [videoUrl, isAnalyzing],
   );
+  const activeStage = analysisStages
+    .filter((stage) => analysisProgress >= stage.at)
+    .at(-1);
 
   const handleAnalyze = async () => {
     if (!videoRef.current) return;
@@ -50,6 +96,10 @@ export default function UploadPage() {
     try {
       const report = await analyzeVideoElement(videoRef.current, setAnalysisProgress);
       sessionStorage.setItem("athletiq-analysis-report", JSON.stringify(report));
+      const lowestSubscore = [...report.subscores].sort(
+        (left, right) => left.score - right.score,
+      )[0];
+      updateDashboardSession(report.overallScore, lowestSubscore?.label ?? null);
       sessionStorage.setItem(
         "athletiq-upload-context",
         JSON.stringify({ cameraAngle, videoType }),
@@ -206,10 +256,24 @@ export default function UploadPage() {
           ) : null}
 
           {isAnalyzing ? (
-            <div className="mt-6 rounded-lg border border-volt/20 bg-volt/10 p-4">
-              <div className="mb-2 flex items-center justify-between text-sm font-bold text-slate-100">
-                <span>Analyzing pose and scoring movement</span>
-                <span>{analysisProgress}%</span>
+            <div className="mt-6 rounded-lg border border-volt/20 bg-volt/10 p-5">
+              <div className="mb-4 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-md bg-volt text-navy-950">
+                    <ScanLine className="animate-pulse" size={20} aria-hidden />
+                  </div>
+                  <div>
+                    <p className="text-sm font-black text-white">
+                      Analyzing pose and scoring movement
+                    </p>
+                    <p className="mt-1 text-xs font-semibold text-slate-300">
+                      {activeStage?.label ?? "Preparing video"}
+                    </p>
+                  </div>
+                </div>
+                <span className="text-lg font-black text-volt">
+                  {analysisProgress}%
+                </span>
               </div>
               <div className="h-2 overflow-hidden rounded-full bg-white/10">
                 <div
@@ -217,6 +281,34 @@ export default function UploadPage() {
                   style={{ width: `${analysisProgress}%` }}
                 />
               </div>
+              <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                {analysisStages.slice(1).map((stage) => {
+                  const isComplete = analysisProgress >= stage.at;
+                  return (
+                    <div
+                      className={`rounded-md border p-3 text-sm font-semibold ${
+                        isComplete
+                          ? "border-volt/40 bg-volt/10 text-white"
+                          : "border-white/10 bg-navy-950/60 text-slate-400"
+                      }`}
+                      key={stage.label}
+                    >
+                      <div className="mb-2 flex items-center gap-2">
+                        {isComplete ? (
+                          <CheckCircle2 size={16} aria-hidden />
+                        ) : (
+                          <Activity size={16} aria-hidden />
+                        )}
+                        <span>{stage.label}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="mt-4 text-xs font-semibold leading-5 text-slate-300">
+                AthletIQ is reading frames in your browser. Nothing is uploaded
+                to a backend in this prototype.
+              </p>
             </div>
           ) : null}
 

@@ -28,6 +28,7 @@ export async function analyzeVideoElement(
   video: HTMLVideoElement,
   onProgress?: (progress: number) => void,
 ): Promise<AnalysisReport> {
+  onProgress?.(8);
   const { FilesetResolver, PoseLandmarker } = await import(
     "@mediapipe/tasks-vision"
   );
@@ -37,6 +38,7 @@ export async function analyzeVideoElement(
   }
 
   const vision = await FilesetResolver.forVisionTasks("/mediapipe/wasm");
+  onProgress?.(14);
   const poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
     baseOptions: {
       modelAssetPath: "/models/pose_landmarker_lite.task",
@@ -48,6 +50,7 @@ export async function analyzeVideoElement(
     minPosePresenceConfidence: 0.45,
     minTrackingConfidence: 0.45,
   });
+  onProgress?.(20);
 
   const duration = video.duration;
   const sampleCount = Math.max(
@@ -66,7 +69,7 @@ export async function analyzeVideoElement(
       if (landmarks?.length) {
         frames.push({ time, landmarks });
       }
-      onProgress?.(Math.round(((index + 1) / sampleCount) * 100));
+      onProgress?.(20 + Math.round(((index + 1) / sampleCount) * 74));
     }
   } finally {
     poseLandmarker.close();
@@ -75,5 +78,8 @@ export async function analyzeVideoElement(
     );
   }
 
-  return scoreApproach(frames, duration);
+  onProgress?.(96);
+  const report = scoreApproach(frames, duration);
+  onProgress?.(100);
+  return report;
 }

@@ -3,7 +3,7 @@ export type ConfidenceLevel = "High" | "Medium" | "Low";
 export type AthleteProfile = {
   firstName: string;
   age: string;
-  gender: string;
+  gender: "Female" | "Male" | "Non-binary" | "Prefer not to say" | "";
   height: string;
   weight: string;
   dominantHand: "Right" | "Left" | "Both" | "";
@@ -15,7 +15,16 @@ export type AthleteProfile = {
     | "Libero"
     | "Defensive Specialist"
     | "";
-  skillLevel: "Beginner" | "School Team" | "Club" | "Varsity" | "College" | "";
+  skillLevel:
+    | "Beginner"
+    | "JV"
+    | "Club"
+    | "Varsity"
+    | "D3"
+    | "D2"
+    | "D1"
+    | "Pro"
+    | "";
   standingReach: string;
   maxTouch: string;
   mainGoal:

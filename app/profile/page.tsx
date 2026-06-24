@@ -18,10 +18,13 @@ const positions: AthleteProfile["position"][] = [
 
 const skillLevels: AthleteProfile["skillLevel"][] = [
   "Beginner",
-  "School Team",
+  "JV",
   "Club",
   "Varsity",
-  "College",
+  "D3",
+  "D2",
+  "D1",
+  "Pro",
 ];
 
 const goals: AthleteProfile["mainGoal"][] = [
@@ -40,41 +43,33 @@ const profileFields = [
     helper: "Used to personalize the report without changing the score.",
   },
   {
-    key: "age",
-    label: "Age",
-    helper: "Age helps compare athletes to a more relevant sample group later.",
-  },
-  {
-    key: "gender",
-    label: "Gender",
-    helper:
-      "Used only for future comparison groups. Scores should still be based on visible mechanics.",
-  },
-  {
-    key: "height",
-    label: "Height",
-    helper:
-      "Height, reach, and position help AthletIQ avoid random professional comparisons.",
-  },
-  {
     key: "weight",
     label: "Weight",
     helper:
       "May help coaches interpret movement context, but it should not drive conclusions by itself.",
   },
-  {
-    key: "standingReach",
-    label: "Standing reach",
-    helper:
-      "Standing reach makes future max-touch comparisons more relevant.",
-  },
-  {
-    key: "maxTouch",
-    label: "Max touch",
-    helper:
-      "Max touch helps separate jump outcome from approach mechanics.",
-  },
 ] as const;
+
+const formatHeight = (heightCm: number) => {
+  const totalInches = Math.round(heightCm / 2.54);
+  const feet = Math.floor(totalInches / 12);
+  const inches = totalInches % 12;
+  return `${heightCm} cm (${feet}'${inches}")`;
+};
+
+const parseMeasurementNumber = (value: string) => {
+  const numeric = Number(value.replace(/[^0-9.]/g, ""));
+  return Number.isFinite(numeric) && numeric > 0 ? String(numeric) : "";
+};
+
+const parseMeasurementUnit = (value: string) =>
+  value.toLowerCase().includes("cm") ? "cm" : "in";
+
+const measurementValue = (value: string, fallback = "") =>
+  value ? parseMeasurementNumber(value) : fallback;
+
+const withUnit = (value: string, unit: "in" | "cm") =>
+  value ? `${value} ${unit}` : "";
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<AthleteProfile>(defaultAthleteProfile);
@@ -89,6 +84,10 @@ export default function ProfilePage() {
     setSaved(false);
     setProfile((current) => ({ ...current, [key]: value }));
   };
+
+  const heightCm = Number(parseMeasurementNumber(profile.height)) || 170;
+  const standingReachUnit = parseMeasurementUnit(profile.standingReach);
+  const maxTouchUnit = parseMeasurementUnit(profile.maxTouch);
 
   const saveProfile = () => {
     localStorage.setItem("athletiq-athlete-profile", JSON.stringify(profile));
@@ -141,6 +140,160 @@ export default function ProfilePage() {
                 </span>
               </label>
             ))}
+
+            <label className="block">
+              <span className="text-sm font-bold text-slate-100">Age</span>
+              <input
+                className="focus-ring mt-2 w-full rounded-md border border-white/10 bg-navy-950 px-4 py-3 text-white"
+                max={100}
+                min={5}
+                type="number"
+                value={profile.age}
+                onChange={(event) =>
+                  updateProfile(
+                    "age",
+                    event.target.value
+                      ? String(Math.min(100, Number(event.target.value)))
+                      : "",
+                  )
+                }
+              />
+              <span className="mt-2 block text-xs leading-5 text-slate-400">
+                Age is capped at 100 and only helps future comparison groups.
+              </span>
+            </label>
+
+            <label className="block">
+              <span className="text-sm font-bold text-slate-100">Gender</span>
+              <select
+                className="focus-ring mt-2 w-full rounded-md border border-white/10 bg-navy-950 px-4 py-3 text-white"
+                value={profile.gender}
+                onChange={(event) =>
+                  updateProfile("gender", event.target.value)
+                }
+              >
+                <option value="">Select</option>
+                <option>Female</option>
+                <option>Male</option>
+                <option>Non-binary</option>
+                <option>Prefer not to say</option>
+              </select>
+              <span className="mt-2 block text-xs leading-5 text-slate-400">
+                Used only for comparison groups. Mechanics scoring still comes
+                from the video.
+              </span>
+            </label>
+
+            <label className="block md:col-span-2">
+              <span className="text-sm font-bold text-slate-100">Height</span>
+              <div className="mt-2 rounded-md border border-white/10 bg-navy-950 px-4 py-4">
+                <div className="mb-3 flex items-center justify-between gap-4">
+                  <span className="text-sm font-bold text-slate-300">
+                    120 cm
+                  </span>
+                  <span className="text-lg font-black text-white">
+                    {formatHeight(heightCm)}
+                  </span>
+                  <span className="text-sm font-bold text-slate-300">
+                    230 cm
+                  </span>
+                </div>
+                <input
+                  className="w-full accent-[#2df6c8]"
+                  max={230}
+                  min={120}
+                  type="range"
+                  value={heightCm}
+                  onChange={(event) =>
+                    updateProfile("height", `${event.target.value} cm`)
+                  }
+                />
+              </div>
+              <span className="mt-2 block text-xs leading-5 text-slate-400">
+                Height, reach, and position help AthletIQ avoid random
+                professional comparisons.
+              </span>
+            </label>
+
+            <div className="block">
+              <span className="text-sm font-bold text-slate-100">
+                Standing reach
+              </span>
+              <div className="mt-2 grid grid-cols-[1fr_auto] gap-2">
+                <input
+                  className="focus-ring w-full rounded-md border border-white/10 bg-navy-950 px-4 py-3 text-white"
+                  min={1}
+                  placeholder="Example: 90"
+                  type="number"
+                  value={measurementValue(profile.standingReach)}
+                  onChange={(event) =>
+                    updateProfile(
+                      "standingReach",
+                      withUnit(event.target.value, standingReachUnit),
+                    )
+                  }
+                />
+                <select
+                  className="focus-ring rounded-md border border-white/10 bg-navy-950 px-3 py-3 text-white"
+                  value={standingReachUnit}
+                  onChange={(event) =>
+                    updateProfile(
+                      "standingReach",
+                      withUnit(
+                        measurementValue(profile.standingReach),
+                        event.target.value as "in" | "cm",
+                      ),
+                    )
+                  }
+                >
+                  <option value="in">in</option>
+                  <option value="cm">cm</option>
+                </select>
+              </div>
+              <span className="mt-2 block text-xs leading-5 text-slate-400">
+                Required format is a number plus inches or centimeters.
+              </span>
+            </div>
+
+            <div className="block">
+              <span className="text-sm font-bold text-slate-100">
+                Max touch
+              </span>
+              <div className="mt-2 grid grid-cols-[1fr_auto] gap-2">
+                <input
+                  className="focus-ring w-full rounded-md border border-white/10 bg-navy-950 px-4 py-3 text-white"
+                  min={1}
+                  placeholder="Example: 118"
+                  type="number"
+                  value={measurementValue(profile.maxTouch)}
+                  onChange={(event) =>
+                    updateProfile(
+                      "maxTouch",
+                      withUnit(event.target.value, maxTouchUnit),
+                    )
+                  }
+                />
+                <select
+                  className="focus-ring rounded-md border border-white/10 bg-navy-950 px-3 py-3 text-white"
+                  value={maxTouchUnit}
+                  onChange={(event) =>
+                    updateProfile(
+                      "maxTouch",
+                      withUnit(
+                        measurementValue(profile.maxTouch),
+                        event.target.value as "in" | "cm",
+                      ),
+                    )
+                  }
+                >
+                  <option value="in">in</option>
+                  <option value="cm">cm</option>
+                </select>
+              </div>
+              <span className="mt-2 block text-xs leading-5 text-slate-400">
+                Max touch helps separate jump outcome from approach mechanics.
+              </span>
+            </div>
 
             <label className="block">
               <span className="text-sm font-bold text-slate-100">
@@ -238,8 +391,8 @@ export default function ProfilePage() {
                 }
               />
               <span className="mt-2 block text-xs leading-5 text-slate-400">
-                Optional. AthletIQ uses these words only to find safer study
-                references, not to claim your mechanics match a pro.
+                Optional. Leave this blank if you are too new to know your play
+                style yet.
               </span>
             </label>
           </div>
