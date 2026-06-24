@@ -20,6 +20,9 @@ export function SiteHeader() {
           <Link className="focus-ring hover:text-white" href="/validation">
             Validation
           </Link>
+          <Link className="focus-ring hover:text-white" href="/video-sourcing">
+            Video Sourcing
+          </Link>
           <Link
             className="focus-ring rounded-md bg-volt px-4 py-2 font-bold text-navy-950 transition hover:bg-white"
             href="/upload"
